@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Red vs Blue Clan Battlefield</title>
+  <title>Red Clan vs Blue Clan Battlefield</title>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
   </style>
@@ -19,15 +19,14 @@
 <script type="module">
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-  // Configuración de la Escena y Cámara
+  // Configuración de la Escena
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x12131C);
-  scene.fog = new THREE.FogExp2(0x12131C, 0.012);
+  scene.background = new THREE.Color(0x0e1017);
+  scene.fog = new THREE.FogExp2(0x0e1017, 0.015);
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 20, 50);
+  camera.position.set(0, 18, 45);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -36,96 +35,111 @@
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.target.set(0, 2, 0);
 
   // Iluminación
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambientLight);
 
   const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-  dirLight.position.set(30, 50, 20);
+  dirLight.position.set(30, 40, 20);
   dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
   scene.add(dirLight);
 
   // Terreno
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(120, 120),
-    new THREE.MeshStandardMaterial({ color: 0x1a1e24, roughness: 0.9 })
+    new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.8 })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Grupos de Clanes
-  const redClanGroup = new THREE.Group();
-  const blueClanGroup = new THREE.Group();
-  scene.add(redClanGroup);
-  scene.add(blueClanGroup);
+  // Generador de Personajes Representativos
+  function createCharacter(type, clan) {
+    const group = new THREE.Group();
+    const isRed = clan === 'red';
 
-  // Carga Dinámica de Modelos 3D (.glb)
-  const loader = new GLTFLoader();
+    // Colores por clase
+    const bodyColor = isRed 
+      ? (type === 'barbarian' ? 0xd63031 : 0xe17055) 
+      : (type === 'knight' ? 0x0984e3 : 0x00cec9);
 
-  const unitsConfig = [
-    { file: 'barbarian.glb', side: 'red',  count: 35 },
-    { file: 'rogue.glb',     side: 'red',  count: 35 },
-    { file: 'knight.glb',    side: 'blue', count: 35 },
-    { file: 'mage.glb',      side: 'blue', count: 35 }
-  ];
+    // Cuerpo
+    const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.8, 8), bodyMat);
+    body.position.y = 0.9;
+    body.castShadow = true;
+    group.add(body);
 
-  unitsConfig.forEach(unit => {
-    loader.load(
-      `assets/${unit.file}`,
-      (gltf) => {
-        const baseModel = gltf.scene;
+    // Cabeza
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffeaa7 });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), headMat);
+    head.position.y = 2.0;
+    head.castShadow = true;
+    group.add(head);
 
-        // Activar proyectado de sombras en las mallas del modelo
-        baseModel.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
+    // Armas / Accesorios distintivos
+    const itemMat = new THREE.MeshStandardMaterial({ color: isRed ? 0xff7675 : 0x74b9ff, metalness: 0.5 });
+    if (type === 'barbarian' || type === 'knight') {
+      // Escudo/Espada
+      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.6, 0.3), itemMat);
+      weapon.position.set(0.6, 1.1, 0.3);
+      group.add(weapon);
+    } else {
+      // Báculo / Daga
+      const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2), itemMat);
+      staff.position.set(-0.5, 1.1, 0.2);
+      group.add(staff);
+    }
 
-        for (let i = 0; i < unit.count; i++) {
-          const clone = baseModel.clone();
+    return group;
+  }
 
-          if (unit.side === 'red') {
-            clone.position.set(-12 - Math.random() * 35, 0, (Math.random() - 0.5) * 80);
-            clone.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-            redClanGroup.add(clone);
-          } else {
-            clone.position.set(12 + Math.random() * 35, 0, (Math.random() - 0.5) * 80);
-            clone.rotation.y = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-            blueClanGroup.add(clone);
-          }
-        }
-      },
-      undefined,
-      (error) => {
-        console.error(`Error al cargar el archivo assets/${unit.file}:`, error);
-      }
-    );
+  // Generación de Ejércitos
+  const redGroup = new THREE.Group();
+  const blueGroup = new THREE.Group();
+
+  // Red Clan (Izquierda: 35 Barbarians, 35 Rogues)
+  ['barbarian', 'rogue'].forEach(type => {
+    for (let i = 0; i < 35; i++) {
+      const char = createCharacter(type, 'red');
+      char.position.set(-8 - Math.random() * 32, 0, (Math.random() - 0.5) * 70);
+      char.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+      redGroup.add(char);
+    }
   });
 
+  // Blue Clan (Derecha: 35 Knights, 35 Mages)
+  ['knight', 'mage'].forEach(type => {
+    for (let i = 0; i < 35; i++) {
+      const char = createCharacter(type, 'blue');
+      char.position.set(8 + Math.random() * 32, 0, (Math.random() - 0.5) * 70);
+      char.rotation.y = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+      blueGroup.add(char);
+    }
+  });
+
+  scene.add(redGroup);
+  scene.add(blueGroup);
+
   // Lluvia de Flechas
-  const ARROW_COUNT = 2500;
-  const arrowGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 5);
+  const ARROW_COUNT = 2000;
+  const arrowGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.4, 4);
   arrowGeo.rotateX(Math.PI / 2);
-  const arrowMat = new THREE.MeshStandardMaterial({ color: 0xdfb15b, metalness: 0.3, roughness: 0.6 });
+  const arrowMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.4 });
 
   const instancedArrows = new THREE.InstancedMesh(arrowGeo, arrowMat, ARROW_COUNT);
   const dummy = new THREE.Object3D();
-  const arrowPhysics = [];
+  const arrowData = [];
 
   for (let i = 0; i < ARROW_COUNT; i++) {
-    const x = (Math.random() - 0.5) * 90;
-    const y = Math.random() * 40 + 5;
-    const z = (Math.random() - 0.5) * 90;
-    const speed = 0.9 + Math.random() * 0.8;
+    const x = (Math.random() - 0.5) * 80;
+    const y = Math.random() * 35 + 5;
+    const z = (Math.random() - 0.5) * 80;
+    const speed = 0.8 + Math.random() * 0.7;
 
-    arrowPhysics.push({ x, y, z, speed });
-
+    arrowData.push({ x, y, z, speed });
     dummy.position.set(x, y, z);
     dummy.rotation.set(Math.PI / 3, 0, -0.2);
     dummy.updateMatrix();
@@ -138,18 +152,18 @@
     requestAnimationFrame(animate);
 
     for (let i = 0; i < ARROW_COUNT; i++) {
-      const p = arrowPhysics[i];
-      p.y -= p.speed;
-      p.x += p.speed * 0.25;
+      const a = arrowData[i];
+      a.y -= a.speed;
+      a.x += a.speed * 0.2;
 
-      if (p.y <= 0) {
-        p.y = 35 + Math.random() * 20;
-        p.x = (Math.random() - 0.5) * 90;
-        p.z = (Math.random() - 0.5) * 90;
+      if (a.y <= 0) {
+        a.y = 30 + Math.random() * 15;
+        a.x = (Math.random() - 0.5) * 80;
+        a.z = (Math.random() - 0.5) * 80;
       }
 
-      dummy.position.set(p.x, p.y, p.z);
-      dummy.rotation.set(Math.PI / 2.8, 0, -0.2);
+      dummy.position.set(a.x, a.y, a.z);
+      dummy.rotation.set(Math.PI / 2.6, 0, -0.2);
       dummy.updateMatrix();
       instancedArrows.setMatrixAt(i, dummy.matrix);
     }
@@ -161,7 +175,6 @@
 
   animate();
 
-  // Ajuste de Ventana
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
