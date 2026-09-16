@@ -2,255 +2,177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Noun Quest 3D</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>1v1 Touch Duel</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111; color: #fff; }
-    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    * { touch-action: none; user-select: none; -webkit-user-select: none; }
+    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; }
     
-    /* UI Overlay Layer */
-    .ui-layer { position: absolute; z-index: 10; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .interactive { pointer-events: auto; }
-    
-    /* Home Screen Styling */
-    #home-screen { background: rgba(15, 23, 42, 0.92); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
-    h1 { font-size: 3rem; margin: 0; text-shadow: 0 4px 10px rgba(0,0,0,0.5); color: #f59e0b; }
-    select, button { padding: 12px 24px; font-size: 1.1rem; border-radius: 8px; border: none; cursor: pointer; transition: transform 0.2s, background 0.2s; }
-    button { background: #10b981; color: white; font-weight: bold; }
-    button:hover { background: #059669; transform: scale(1.05); }
-    select { background: #1e293b; color: white; border: 1px solid #475569; }
-
-    /* In-Game HUD Styling */
-    #game-hud { position: absolute; bottom: 30px; width: 90%; max-width: 600px; background: rgba(30, 41, 59, 0.9); padding: 20px; border-radius: 12px; display: none; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-    .option-btn { background: #3b82f6; color: white; padding: 12px; font-size: 1rem; border-radius: 6px; }
-    .option-btn:hover { background: #2563eb; }
-  </style>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-      }
+    #hud {
+      position: absolute; top: 15px; width: 100%;
+      display: flex; justify-content: space-between;
+      padding: 0 20px; box-sizing: border-box; color: #fff;
+      font-weight: bold; text-shadow: 1px 1px 4px #000; z-index: 10;
     }
-  </script>
+    .hp-outer { width: 140px; height: 18px; background: #333; border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
+    .hp-inner { height: 100%; background: #2ecc71; width: 100%; transition: width 0.15s ease-out; }
+    #p2-hp { background: #e74c3c; }
+
+    /* Touch Control Overlays */
+    .controls-layer {
+      position: absolute; bottom: 20px; width: 100%;
+      display: flex; justify-content: space-between; padding: 0 15px;
+      box-sizing: border-box; z-index: 10; pointer-events: none;
+    }
+    .pad { display: flex; gap: 8px; pointer-events: auto; align-items: center; }
+    .btn {
+      width: 55px; height: 55px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5);
+      color: white; font-weight: bold; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn:active { background: rgba(255, 255, 255, 0.6); }
+    .btn-atk { background: rgba(231, 76, 60, 0.5); border-radius: 12px; width: 65px; height: 65px; }
+  </style>
 </head>
 <body>
-
-  <div id="canvas-container"></div>
-
-  <!-- HOME SCREEN OVERLAY -->
-  <div id="home-screen" class="ui-layer interactive">
-    <h1>NOUN QUEST 3D</h1>
-    <label for="level-select">Select CEFR Grammar Level:</label>
-    <select id="level-select">
-      <option value="A1">Level A1 (Beginner)</option>
-      <option value="A2">Level A2 (Elementary)</option>
-      <option value="B1">Level B1 (Intermediate)</option>
-      <option value="B2">Level B2 (Upper Intermediate)</option>
-      <option value="C1">Level C1 (Advanced)</option>
-    </select>
-    <button id="start-btn">START GAME</button>
+  <div id="hud">
+    <div>P1<div class="hp-outer"><div id="p1-hp" class="hp-inner"></div></div></div>
+    <div>P2<div class="hp-outer"><div id="p2-hp" class="hp-inner"></div></div></div>
   </div>
 
-  <!-- IN-GAME HUD OVERLAY -->
-  <div class="ui-layer">
-    <div id="game-hud" class="interactive">
-      <h2 id="question-text">Question loading...</h2>
-      <div id="options-container" class="options-grid"></div>
+  <!-- Virtual Buttons -->
+  <div class="controls-layer">
+    <div class="pad">
+      <div class="btn" id="p1-left">◄</div>
+      <div class="btn" id="p1-right">►</div>
+      <div class="btn btn-atk" id="p1-atk">ATK</div>
+    </div>
+    <div class="pad">
+      <div class="btn btn-atk" id="p2-atk">ATK</div>
+      <div class="btn" id="p2-left">◄</div>
+      <div class="btn" id="p2-right">►</div>
     </div>
   </div>
 
-<script type="module">
-  import * as THREE from 'three';
-  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
 
-  // --- AUDIO CONTROLLER ---
-  const bgMusic = new Audio('./assets/8484.mp3');
-  bgMusic.loop = true;
-  bgMusic.volume = 0.3;
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a24);
 
-  function playSFX(path) {
-    const sfx = new Audio(path);
-    sfx.volume = 0.8;
-    sfx.play().catch(() => {});
-  }
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 4, 9);
+    camera.lookAt(0, 1.2, 0);
 
-  // --- QUESTION BANK (A1 - C1: Countable, Uncountable, Collective Nouns) ---
-  const questionBank = {
-    A1: [
-      { q: "She bought three ___ at the market.", options: ["apples", "apple", "waters"], answer: "apples" },
-      { q: "Can I have a glass of ___?", options: ["water", "waters", "a water"], answer: "water" }
-    ],
-    A2: [
-      { q: "How ___ sugar do you need for the cake?", options: ["much", "many", "few"], answer: "much" },
-      { q: "Look at that ___ of birds flying south!", options: ["flock", "pack", "team"], answer: "flock" }
-    ],
-    B1: [
-      { q: "He gave me a useful piece of ___.", options: ["advice", "advices", "an advice"], answer: "advice" },
-      { q: "A ___ of bees was hovering near the hive.", options: ["swarm", "herd", "fleet"], answer: "swarm" }
-    ],
-    B2: [
-      { q: "All the new ___ was delivered to the factory.", options: ["equipment", "equipments", "piece of equipments"], answer: "equipment" },
-      { q: "A ___ of ships was spotted near the coastline.", options: ["fleet", "pride", "school"], answer: "fleet" }
-    ],
-    C1: [
-      { q: "Much ___ has been made in our research project.", options: ["progress", "progresses", "a progress"], answer: "progress" },
-      { q: "A ___ of crows landed on the roof of the estate.", options: ["murder", "gaggle", "pod"], answer: "murder" }
-    ]
-  };
-
-  // --- THREE.JS SCENE SETUP ---
-  const container = document.getElementById('canvas-container');
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1e1b4b);
-
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 4, 10);
-  camera.lookAt(0, 1, 0);
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  container.appendChild(renderer.domElement);
-
-  const light = new THREE.DirectionalLight(0xffffff, 2);
-  light.position.set(5, 10, 7);
-  scene.add(light, new THREE.AmbientLight(0xffffff, 0.6));
-
-  // Floor Plane
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(30, 30),
-    new THREE.MeshStandardMaterial({ color: 0x334155 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-
-  // --- TEAM CHARACTER MANAGEMENT (.GLB FORMAT) ---
-  const teamPlayer = [];
-  const teamEnemy = [];
-  const loader = new GLTFLoader();
-
-  function spawnCharacter(path, position, rotationY, teamArray) {
-    loader.load(path, (gltf) => {
-      const model = gltf.scene;
-      model.position.copy(position);
-      model.rotation.y = rotationY;
-      scene.add(model);
-
-      const mixer = new THREE.AnimationMixer(model);
-      const animations = {};
-      
-      // Store available animation clips (e.g., Idle, Shoot, Hit)
-      gltf.animations.forEach((clip) => {
-        animations[clip.name] = mixer.clipAction(clip);
-      });
-
-      // Play Idle loop if present
-      if (animations['Idle']) animations['Idle'].play();
-
-      teamArray.push({ model, mixer, animations });
-    }, undefined, (err) => console.log('Asset load error or path mismatch:', path));
-  }
-
-  // Populate Teams with .glb files
-  // Player Team (Facing Right)
-  spawnCharacter('./assets/Knight.glb', new THREE.Vector3(-3, 0, 1), Math.PI / 2, teamPlayer);
-  spawnCharacter('./assets/Archer.glb', new THREE.Vector3(-3, 0, -1), Math.PI / 2, teamPlayer);
-
-  // Enemy Team (Facing Left)
-  spawnCharacter('./assets/Barbarian.glb', new THREE.Vector3(3, 0, 1), -Math.PI / 2, teamEnemy);
-  spawnCharacter('./assets/Rogue.glb', new THREE.Vector3(3, 0, -1), -Math.PI / 2, teamEnemy);
-
-  // --- DYNAMIC ANIMATION & AUDIO TRIGGER ---
-  function triggerAction(attackerTeam, defenderTeam) {
-    const attacker = attackerTeam[0];
-    const defender = defenderTeam[0];
-
-    // Trigger Attacker Shooting Animation & Sound
-    playSFX('./assets/sfx_shoot.mp3');
-    if (attacker && attacker.animations['Shoot']) {
-      attacker.animations['Shoot'].reset().setLoop(THREE.LoopOnce).play();
-    }
-
-    // Delayed Damage Trigger on Defender
-    setTimeout(() => {
-      playSFX('./assets/sfx_damage.mp3');
-      if (defender && defender.animations['Hit']) {
-        defender.animations['Hit'].reset().setLoop(THREE.LoopOnce).play();
-      }
-    }, 400);
-  }
-
-  // --- GAME STATE & UI CONTROLS ---
-  let currentQuestions = [];
-  let currentQIndex = 0;
-
-  document.getElementById('start-btn').addEventListener('click', () => {
-    bgMusic.play();
-    playSFX('./assets/sfx_click.mp3');
-
-    document.getElementById('home-screen').style.display = 'none';
-    document.getElementById('game-hud').style.display = 'block';
-
-    const selectedLevel = document.getElementById('level-select').value;
-    currentQuestions = questionBank[selectedLevel];
-    currentQIndex = 0;
-    loadQuestion();
-  });
-
-  function loadQuestion() {
-    if (currentQIndex >= currentQuestions.length) {
-      document.getElementById('question-text').innerText = "Level Complete!";
-      document.getElementById('options-container').innerHTML = '';
-      return;
-    }
-
-    const qData = currentQuestions[currentQIndex];
-    document.getElementById('question-text').innerText = qData.q;
-    const optionsGrid = document.getElementById('options-container');
-    optionsGrid.innerHTML = '';
-
-    qData.options.forEach((option) => {
-      const btn = document.createElement('button');
-      btn.className = 'option-btn';
-      btn.innerText = option;
-      btn.onclick = () => handleAnswer(option, qData.answer);
-      optionsGrid.appendChild(btn);
-    });
-  }
-
-  function handleAnswer(selected, correct) {
-    if (selected === correct) {
-      triggerAction(teamPlayer, teamEnemy);
-    } else {
-      triggerAction(teamEnemy, teamPlayer);
-    }
-    currentQIndex++;
-    setTimeout(loadQuestion, 1600);
-  }
-
-  // --- RENDER LOOP ---
-  const clock = new THREE.Clock();
-  function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
-    
-    // Update active animation mixers
-    [...teamPlayer, ...teamEnemy].forEach(char => {
-      if (char.mixer) char.mixer.update(delta);
-    });
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  // Responsive Resize
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(5, 12, 8);
+    scene.add(dirLight);
+
+    const arena = new THREE.Mesh(
+      new THREE.CylinderGeometry(8, 8, 0.4, 32),
+      new THREE.MeshStandardMaterial({ color: 0x3a3a48 })
+    );
+    arena.position.y = -0.2;
+    scene.add(arena);
+
+    class Fighter {
+      constructor(startPos, isP1) {
+        this.isP1 = isP1;
+        this.hp = 100;
+        this.speed = 0.07;
+        this.mesh = new THREE.Group();
+        this.mesh.position.copy(startPos);
+        scene.add(this.mesh);
+
+        const geo = new THREE.CylinderGeometry(0.3, 0.3, 1.6);
+        const mat = new THREE.MeshStandardMaterial({ color: isP1 ? 0x3498db : 0xe74c3c });
+        this.avatar = new THREE.Mesh(geo, mat);
+        this.avatar.position.y = 0.8;
+        this.mesh.add(this.avatar);
+      }
+
+      loadModel(loader, path) {
+        loader.load(path, (fbx) => {
+          this.mesh.remove(this.avatar);
+          fbx.scale.set(0.01, 0.01, 0.01);
+          this.mesh.add(fbx);
+        }, undefined, (err) => console.warn('Using placeholder mesh.', err));
+      }
+
+      attack(target) {
+        if (this.mesh.position.distanceTo(target.mesh.position) < 1.8) {
+          target.takeDamage(12);
+        }
+      }
+
+      takeDamage(amount) {
+        this.hp = Math.max(0, this.hp - amount);
+        document.getElementById(this.isP1 ? 'p1-hp' : 'p2-hp').style.width = `${this.hp}%`;
+      }
+    }
+
+    const p1 = new Fighter(new THREE.Vector3(-2.5, 0, 0), true);
+    const p2 = new Fighter(new THREE.Vector3(2.5, 0, 0), false);
+    p1.mesh.rotation.y = Math.PI / 2;
+    p2.mesh.rotation.y = -Math.PI / 2;
+
+    const loader = new THREE.FBXLoader();
+    // Relative paths are required for GitHub Pages
+    const modelPath = './KayKit_Adventurers_2.0_FREE/Animations/fbx/Rig_Medium/Rig_Medium_General.fbx';
+    p1.loadModel(loader, modelPath);
+    p2.loadModel(loader, modelPath);
+
+    // Touch Input State Mapping
+    const touchState = {
+      p1Left: false, p1Right: false,
+      p2Left: false, p2Right: false
+    };
+
+    function bindBtn(id, onPress, onRelease) {
+      const el = document.getElementById(id);
+      el.addEventListener('touchstart', (e) => { e.preventDefault(); onPress(); });
+      el.addEventListener('touchend', (e) => { e.preventDefault(); if (onRelease) onRelease(); });
+      // Fallback for mouse testing on desktop
+      el.addEventListener('mousedown', onPress);
+      el.addEventListener('mouseup', () => { if (onRelease) onRelease(); });
+    }
+
+    bindBtn('p1-left', () => touchState.p1Left = true, () => touchState.p1Left = false);
+    bindBtn('p1-right', () => touchState.p1Right = true, () => touchState.p1Right = false);
+    bindBtn('p1-atk', () => p1.attack(p2));
+
+    bindBtn('p2-left', () => touchState.p2Left = true, () => touchState.p2Left = false);
+    bindBtn('p2-right', () => touchState.p2Right = true, () => touchState.p2Right = false);
+    bindBtn('p2-atk', () => p2.attack(p1));
+
+    function update() {
+      if (touchState.p1Left && p1.mesh.position.x > -7) p1.mesh.position.x -= p1.speed;
+      if (touchState.p1Right && p1.mesh.position.x < p2.mesh.position.x - 0.8) p1.mesh.position.x += p1.speed;
+
+      if (touchState.p2Left && p2.mesh.position.x > p1.mesh.position.x + 0.8) p2.mesh.position.x -= p2.speed;
+      if (touchState.p2Right && p2.mesh.position.x < 7) p2.mesh.position.x += p2.speed;
+    }
+
+    function loop() {
+      requestAnimationFrame(loop);
+      update();
+      renderer.render(scene, camera);
+    }
+    loop();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
 </body>
 </html>
