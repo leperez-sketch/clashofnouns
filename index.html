@@ -21,7 +21,7 @@
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-  // Scene & Camera Setup
+  // Configuración de la Escena y Cámara
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x12131C);
   scene.fog = new THREE.FogExp2(0x12131C, 0.012);
@@ -38,12 +38,14 @@
   controls.enableDamping = true;
 
   // Iluminación
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
   scene.add(ambientLight);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
   dirLight.position.set(30, 50, 20);
   dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
   scene.add(dirLight);
 
   // Terreno
@@ -55,61 +57,61 @@
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Generador de Placeholder mientras cargas los modelos GLTF reales
-  function createUnitPlaceholder(colorHex) {
-    const group = new THREE.Group();
-    const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.5, 0.6, 2, 12),
-      new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 })
-    );
-    body.position.y = 1;
-    body.castShadow = true;
-    group.add(body);
-    return group;
-  }
-
-  // Populate Red Clan (Izquierda - Barbarian & Rogue)
+  // Grupos de Clanes
   const redClanGroup = new THREE.Group();
-  const redCountPerClass = 35; // 70 tropas en total
-
-  for (let i = 0; i < redCountPerClass * 2; i++) {
-    const isBarbarian = i % 2 === 0;
-    const color = isBarbarian ? 0xd63031 : 0xe17055; // Tonos rojos/naranjas
-    const unit = createUnitPlaceholder(color);
-
-    unit.position.set(
-      -12 - Math.random() * 35,
-      0,
-      (Math.random() - 0.5) * 80
-    );
-    unit.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-    redClanGroup.add(unit);
-  }
-  scene.add(redClanGroup);
-
-  // Populate Blue Clan (Derecha - Knight & Mage)
   const blueClanGroup = new THREE.Group();
-  const blueCountPerClass = 35; // 70 tropas en total
-
-  for (let i = 0; i < blueCountPerClass * 2; i++) {
-    const isKnight = i % 2 === 0;
-    const color = isKnight ? 0x0984e3 : 0x74b9ff; // Tonos azules
-    const unit = createUnitPlaceholder(color);
-
-    unit.position.set(
-      12 + Math.random() * 35,
-      0,
-      (Math.random() - 0.5) * 80
-    );
-    unit.rotation.y = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-    blueClanGroup.add(unit);
-  }
+  scene.add(redClanGroup);
   scene.add(blueClanGroup);
 
-  // sistema de Lluvia de Flechas (InstancedMesh para alto rendimiento)
-  const ARROW_COUNT = 2500; // Cantidad masiva de flechas
+  // Carga Dinámica de Modelos 3D (.glb)
+  const loader = new GLTFLoader();
+
+  const unitsConfig = [
+    { file: 'barbarian.glb', side: 'red',  count: 35 },
+    { file: 'rogue.glb',     side: 'red',  count: 35 },
+    { file: 'knight.glb',    side: 'blue', count: 35 },
+    { file: 'mage.glb',      side: 'blue', count: 35 }
+  ];
+
+  unitsConfig.forEach(unit => {
+    loader.load(
+      `assets/${unit.file}`,
+      (gltf) => {
+        const baseModel = gltf.scene;
+
+        // Activar proyectado de sombras en las mallas del modelo
+        baseModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        for (let i = 0; i < unit.count; i++) {
+          const clone = baseModel.clone();
+
+          if (unit.side === 'red') {
+            clone.position.set(-12 - Math.random() * 35, 0, (Math.random() - 0.5) * 80);
+            clone.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+            redClanGroup.add(clone);
+          } else {
+            clone.position.set(12 + Math.random() * 35, 0, (Math.random() - 0.5) * 80);
+            clone.rotation.y = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+            blueClanGroup.add(clone);
+          }
+        }
+      },
+      undefined,
+      (error) => {
+        console.error(`Error al cargar el archivo assets/${unit.file}:`, error);
+      }
+    );
+  });
+
+  // Lluvia de Flechas
+  const ARROW_COUNT = 2500;
   const arrowGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 5);
-  arrowGeo.rotateX(Math.PI / 2); // Orientar punta
+  arrowGeo.rotateX(Math.PI / 2);
   const arrowMat = new THREE.MeshStandardMaterial({ color: 0xdfb15b, metalness: 0.3, roughness: 0.6 });
 
   const instancedArrows = new THREE.InstancedMesh(arrowGeo, arrowMat, ARROW_COUNT);
@@ -131,17 +133,15 @@
   }
   scene.add(instancedArrows);
 
-  // Animación
+  // Bucle de Animación
   function animate() {
     requestAnimationFrame(animate);
 
-    // Actualizar caída de flechas
     for (let i = 0; i < ARROW_COUNT; i++) {
       const p = arrowPhysics[i];
       p.y -= p.speed;
-      p.x += p.speed * 0.25; // Angulo inclinado de trayectoria
+      p.x += p.speed * 0.25;
 
-      // Si toca el suelo, reaparece arriba
       if (p.y <= 0) {
         p.y = 35 + Math.random() * 20;
         p.x = (Math.random() - 0.5) * 90;
@@ -161,6 +161,7 @@
 
   animate();
 
+  // Ajuste de Ventana
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
