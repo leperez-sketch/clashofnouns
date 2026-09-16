@@ -1,74 +1,171 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Clash of Nouns - PvP Duelo</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Red vs Blue Clan Battlefield</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+  </style>
 </head>
 <body>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    <div id="game-container">
-        <!-- TOP HUD -->
-        <div id="top-hud">
-            <!-- RED CLAN (P1) -->
-            <div class="hud-clan red-clan">
-                <span class="clan-title">RED CLAN (P1)</span>
-                <div class="hp-bar-outer"><div id="p1-hp" class="hp-bar-inner"></div></div>
-            </div>
+  // Scene & Camera Setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x12131C);
+  scene.fog = new THREE.FogExp2(0x12131C, 0.012);
 
-            <!-- TIMER Y NIVEL -->
-            <div id="timer-box">
-                <div id="timer-text">2:00</div>
-                <select id="cefr-select" onchange="changeLevel()">
-                    <option value="A1">A1 - Beginner</option>
-                    <option value="A2">A2 - Elementary</option>
-                    <option value="B1">B1 - Intermediate</option>
-                </select>
-            </div>
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 20, 50);
 
-            <!-- BLUE CLAN (P2) -->
-            <div class="hud-clan blue-clan">
-                <button id="music-btn" onclick="toggleMusic()">music ON/OFF</button>
-                <span class="clan-title">BLUE CLAN (P2)</span>
-                <div class="hp-bar-outer"><div id="p2-hp" class="hp-bar-inner"></div></div>
-            </div>
-        </div>
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  document.body.appendChild(renderer.domElement);
 
-        <!-- CAMPO DE BATALLA (Dibujos Canvas) -->
-        <div id="canvas-container">
-            <canvas id="battleCanvas"></canvas>
-        </div>
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
 
-        <!-- PANTALLA DIVIDIDA DE PREGUNTAS (PVP) -->
-        <div id="split-controls">
-            <!-- JUGADOR 1 (Izquierda) -->
-            <div class="player-panel p1-panel">
-                <div class="panel-header">RED CLAN</div>
-                <div id="p1-category" class="category-tag">CATEGORY</div>
-                <div id="p1-question" class="question-box">Cargando...</div>
-                <div id="p1-options" class="options-grid"></div>
-            </div>
+  // Iluminación
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+  scene.add(ambientLight);
 
-            <!-- LÍNEA DIVISORIA CENTRAL -->
-            <div class="center-divider"></div>
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  dirLight.position.set(30, 50, 20);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
 
-            <!-- JUGADOR 2 (Derecha) -->
-            <div class="player-panel p2-panel">
-                <div class="panel-header">BLUE CLAN</div>
-                <div id="p2-category" class="category-tag">CATEGORY</div>
-                <div id="p2-question" class="question-box">Cargando...</div>
-                <div id="p2-options" class="options-grid"></div>
-            </div>
-        </div>
-    </div>
+  // Terreno
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(120, 120),
+    new THREE.MeshStandardMaterial({ color: 0x1a1e24, roughness: 0.9 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
 
-    <!-- MODAL VICTORIA -->
-    <div id="game-over-modal" class="modal hidden">
-        <h1 id="winner-text">¡GANA JUGADOR!</h1>
-        <button class="btn-restart" onclick="restartGame()">¡OTRA VEZ!</button>
-    </div>
+  // Generador de Placeholder mientras cargas los modelos GLTF reales
+  function createUnitPlaceholder(colorHex) {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.5, 0.6, 2, 12),
+      new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 })
+    );
+    body.position.y = 1;
+    body.castShadow = true;
+    group.add(body);
+    return group;
+  }
 
-    <script src="script.js"></script>
+  // Populate Red Clan (Izquierda - Barbarian & Rogue)
+  const redClanGroup = new THREE.Group();
+  const redCountPerClass = 35; // 70 tropas en total
+
+  for (let i = 0; i < redCountPerClass * 2; i++) {
+    const isBarbarian = i % 2 === 0;
+    const color = isBarbarian ? 0xd63031 : 0xe17055; // Tonos rojos/naranjas
+    const unit = createUnitPlaceholder(color);
+
+    unit.position.set(
+      -12 - Math.random() * 35,
+      0,
+      (Math.random() - 0.5) * 80
+    );
+    unit.rotation.y = Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+    redClanGroup.add(unit);
+  }
+  scene.add(redClanGroup);
+
+  // Populate Blue Clan (Derecha - Knight & Mage)
+  const blueClanGroup = new THREE.Group();
+  const blueCountPerClass = 35; // 70 tropas en total
+
+  for (let i = 0; i < blueCountPerClass * 2; i++) {
+    const isKnight = i % 2 === 0;
+    const color = isKnight ? 0x0984e3 : 0x74b9ff; // Tonos azules
+    const unit = createUnitPlaceholder(color);
+
+    unit.position.set(
+      12 + Math.random() * 35,
+      0,
+      (Math.random() - 0.5) * 80
+    );
+    unit.rotation.y = -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
+    blueClanGroup.add(unit);
+  }
+  scene.add(blueClanGroup);
+
+  // sistema de Lluvia de Flechas (InstancedMesh para alto rendimiento)
+  const ARROW_COUNT = 2500; // Cantidad masiva de flechas
+  const arrowGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 5);
+  arrowGeo.rotateX(Math.PI / 2); // Orientar punta
+  const arrowMat = new THREE.MeshStandardMaterial({ color: 0xdfb15b, metalness: 0.3, roughness: 0.6 });
+
+  const instancedArrows = new THREE.InstancedMesh(arrowGeo, arrowMat, ARROW_COUNT);
+  const dummy = new THREE.Object3D();
+  const arrowPhysics = [];
+
+  for (let i = 0; i < ARROW_COUNT; i++) {
+    const x = (Math.random() - 0.5) * 90;
+    const y = Math.random() * 40 + 5;
+    const z = (Math.random() - 0.5) * 90;
+    const speed = 0.9 + Math.random() * 0.8;
+
+    arrowPhysics.push({ x, y, z, speed });
+
+    dummy.position.set(x, y, z);
+    dummy.rotation.set(Math.PI / 3, 0, -0.2);
+    dummy.updateMatrix();
+    instancedArrows.setMatrixAt(i, dummy.matrix);
+  }
+  scene.add(instancedArrows);
+
+  // Animación
+  function animate() {
+    requestAnimationFrame(animate);
+
+    // Actualizar caída de flechas
+    for (let i = 0; i < ARROW_COUNT; i++) {
+      const p = arrowPhysics[i];
+      p.y -= p.speed;
+      p.x += p.speed * 0.25; // Angulo inclinado de trayectoria
+
+      // Si toca el suelo, reaparece arriba
+      if (p.y <= 0) {
+        p.y = 35 + Math.random() * 20;
+        p.x = (Math.random() - 0.5) * 90;
+        p.z = (Math.random() - 0.5) * 90;
+      }
+
+      dummy.position.set(p.x, p.y, p.z);
+      dummy.rotation.set(Math.PI / 2.8, 0, -0.2);
+      dummy.updateMatrix();
+      instancedArrows.setMatrixAt(i, dummy.matrix);
+    }
+    instancedArrows.instanceMatrix.needsUpdate = true;
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+</script>
 </body>
 </html>
