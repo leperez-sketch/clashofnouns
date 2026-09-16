@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFL Clash of Words: Adj vs Noun</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Selector de Nivel -->
+        <div id="level-selector">
+            <label for="level">Select Level: </label>
+            <select id="level-select" onchange="changeLevel()">
+                <option value="A1">A1 - Basic Order</option>
+                <option value="B1">B1 - OSASCOMP (Order)</option>
+                <option value="C1">C1 - Advanced Collocations</option>
+            </select>
+            <div id="score-board">Your Castle: <span id="player-hp">100</span> HP | Enemy Castle: <span id="enemy-hp">100</span> HP</div>
+        </div>
+
+        <!-- Campo de Batalla -->
+        <div id="battlefield">
+            <div id="player-castle" class="castle">🏰 Your Clan</div>
+            <div id="arrow-lane"><span id="arrow" class="hidden">🏹➡️</span></div>
+            <div id="enemy-castle" class="castle">👹 Enemy Clan</div>
+        </div>
+
+        <!-- Panel de Control / Gramática -->
+        <div id="control-panel">
+            <p>Target Noun: <strong id="target-noun">???</strong></p>
+            <p>Select the correct Adjective to attack:</p>
+            <div id="options-container">
+                <!-- Los botones se generarán dinámicamente con JS -->
+            </div>
+            <div id="feedback" class="feedback"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
