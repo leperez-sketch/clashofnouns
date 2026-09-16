@@ -3,176 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>1v1 Touch Duel</title>
-  <style>
-    * { touch-action: none; user-select: none; -webkit-user-select: none; }
-    body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; }
-    
-    #hud {
-      position: absolute; top: 15px; width: 100%;
-      display: flex; justify-content: space-between;
-      padding: 0 20px; box-sizing: border-box; color: #fff;
-      font-weight: bold; text-shadow: 1px 1px 4px #000; z-index: 10;
-    }
-    .hp-outer { width: 140px; height: 18px; background: #333; border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
-    .hp-inner { height: 100%; background: #2ecc71; width: 100%; transition: width 0.15s ease-out; }
-    #p2-hp { background: #e74c3c; }
-
-    /* Touch Control Overlays */
-    .controls-layer {
-      position: absolute; bottom: 20px; width: 100%;
-      display: flex; justify-content: space-between; padding: 0 15px;
-      box-sizing: border-box; z-index: 10; pointer-events: none;
-    }
-    .pad { display: flex; gap: 8px; pointer-events: auto; align-items: center; }
-    .btn {
-      width: 55px; height: 55px; border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5);
-      color: white; font-weight: bold; font-size: 18px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .btn:active { background: rgba(255, 255, 255, 0.6); }
-    .btn-atk { background: rgba(231, 76, 60, 0.5); border-radius: 12px; width: 65px; height: 65px; }
-  </style>
+  <title>EFL Grammar Clash 1v1</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="hud">
-    <div>P1<div class="hp-outer"><div id="p1-hp" class="hp-inner"></div></div></div>
-    <div>P2<div class="hp-outer"><div id="p2-hp" class="hp-inner"></div></div></div>
+
+  <!-- Canvas de fondo 3D -->
+  <div id="canvas-container"></div>
+
+  <!-- Capa HUD e Interfaz de Juego -->
+  <div id="ui-layer">
+    
+    <!-- BARRA SUPERIOR DE SALUD Y NIVEL -->
+    <header id="hud-top">
+      <div class="player-card p1">
+        <div class="avatar">🧙‍♂️</div>
+        <div class="info">
+          <span class="name">HERO (P1)</span>
+          <div class="hp-bar-outer"><div id="p1-hp" class="hp-bar-inner" style="width: 100%;"></div></div>
+        </div>
+      </div>
+
+      <div id="level-badge">
+        <label for="level-select">CEFR LEVEL</label>
+        <select id="level-select" onchange="changeLevel()">
+          <option value="A1">A1 - Beginner</option>
+          <option value="A2">A2 - Elementary</option>
+          <option value="B1" selected>B1 - Intermediate</option>
+          <option value="B2">B2 - Upper-Int</option>
+          <option value="C1">C1 - Advanced</option>
+        </select>
+        <div id="combo-tag">COMBO: <span id="combo-count">0</span>x</div>
+      </div>
+
+      <div class="player-card p2">
+        <div class="info align-right">
+          <span class="name">BOSS (P2)</span>
+          <div class="hp-bar-outer"><div id="p2-hp" class="hp-bar-inner" style="width: 100%;"></div></div>
+        </div>
+        <div class="avatar">🧌</div>
+      </div>
+    </header>
+
+    <!-- TARJETA DE PREGUNTA BATTLE CARD -->
+    <main id="quiz-container">
+      <div class="topic-tag" id="topic-tag">GRAMMAR CATEGORY</div>
+      <h2 id="question-text">Loading question...</h2>
+      
+      <div id="options-grid" class="options-grid">
+        <!-- Generado dinámicamente -->
+      </div>
+
+      <!-- FEEDBACK Y EXPLICACIÓN -->
+      <div id="feedback-panel" class="hidden">
+        <div id="feedback-status"></div>
+        <div id="explanation-text"></div>
+        <button id="next-btn" onclick="nextQuestion()">NEXT ROUND ➔</button>
+      </div>
+    </main>
   </div>
 
-  <!-- Virtual Buttons -->
-  <div class="controls-layer">
-    <div class="pad">
-      <div class="btn" id="p1-left">◄</div>
-      <div class="btn" id="p1-right">►</div>
-      <div class="btn btn-atk" id="p1-atk">ATK</div>
-    </div>
-    <div class="pad">
-      <div class="btn btn-atk" id="p2-atk">ATK</div>
-      <div class="btn" id="p2-left">◄</div>
-      <div class="btn" id="p2-right">►</div>
-    </div>
-  </div>
-
+  <!-- Cargas de Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
-
-  <script>
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a24);
-
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 4, 9);
-    camera.lookAt(0, 1.2, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    dirLight.position.set(5, 12, 8);
-    scene.add(dirLight);
-
-    const arena = new THREE.Mesh(
-      new THREE.CylinderGeometry(8, 8, 0.4, 32),
-      new THREE.MeshStandardMaterial({ color: 0x3a3a48 })
-    );
-    arena.position.y = -0.2;
-    scene.add(arena);
-
-    class Fighter {
-      constructor(startPos, isP1) {
-        this.isP1 = isP1;
-        this.hp = 100;
-        this.speed = 0.07;
-        this.mesh = new THREE.Group();
-        this.mesh.position.copy(startPos);
-        scene.add(this.mesh);
-
-        const geo = new THREE.CylinderGeometry(0.3, 0.3, 1.6);
-        const mat = new THREE.MeshStandardMaterial({ color: isP1 ? 0x3498db : 0xe74c3c });
-        this.avatar = new THREE.Mesh(geo, mat);
-        this.avatar.position.y = 0.8;
-        this.mesh.add(this.avatar);
-      }
-
-      loadModel(loader, path) {
-        loader.load(path, (fbx) => {
-          this.mesh.remove(this.avatar);
-          fbx.scale.set(0.01, 0.01, 0.01);
-          this.mesh.add(fbx);
-        }, undefined, (err) => console.warn('Using placeholder mesh.', err));
-      }
-
-      attack(target) {
-        if (this.mesh.position.distanceTo(target.mesh.position) < 1.8) {
-          target.takeDamage(12);
-        }
-      }
-
-      takeDamage(amount) {
-        this.hp = Math.max(0, this.hp - amount);
-        document.getElementById(this.isP1 ? 'p1-hp' : 'p2-hp').style.width = `${this.hp}%`;
-      }
-    }
-
-    const p1 = new Fighter(new THREE.Vector3(-2.5, 0, 0), true);
-    const p2 = new Fighter(new THREE.Vector3(2.5, 0, 0), false);
-    p1.mesh.rotation.y = Math.PI / 2;
-    p2.mesh.rotation.y = -Math.PI / 2;
-
-    const loader = new THREE.FBXLoader();
-    // Relative paths are required for GitHub Pages
-    const modelPath = './KayKit_Adventurers_2.0_FREE/Animations/fbx/Rig_Medium/Rig_Medium_General.fbx';
-    p1.loadModel(loader, modelPath);
-    p2.loadModel(loader, modelPath);
-
-    // Touch Input State Mapping
-    const touchState = {
-      p1Left: false, p1Right: false,
-      p2Left: false, p2Right: false
-    };
-
-    function bindBtn(id, onPress, onRelease) {
-      const el = document.getElementById(id);
-      el.addEventListener('touchstart', (e) => { e.preventDefault(); onPress(); });
-      el.addEventListener('touchend', (e) => { e.preventDefault(); if (onRelease) onRelease(); });
-      // Fallback for mouse testing on desktop
-      el.addEventListener('mousedown', onPress);
-      el.addEventListener('mouseup', () => { if (onRelease) onRelease(); });
-    }
-
-    bindBtn('p1-left', () => touchState.p1Left = true, () => touchState.p1Left = false);
-    bindBtn('p1-right', () => touchState.p1Right = true, () => touchState.p1Right = false);
-    bindBtn('p1-atk', () => p1.attack(p2));
-
-    bindBtn('p2-left', () => touchState.p2Left = true, () => touchState.p2Left = false);
-    bindBtn('p2-right', () => touchState.p2Right = true, () => touchState.p2Right = false);
-    bindBtn('p2-atk', () => p2.attack(p1));
-
-    function update() {
-      if (touchState.p1Left && p1.mesh.position.x > -7) p1.mesh.position.x -= p1.speed;
-      if (touchState.p1Right && p1.mesh.position.x < p2.mesh.position.x - 0.8) p1.mesh.position.x += p1.speed;
-
-      if (touchState.p2Left && p2.mesh.position.x > p1.mesh.position.x + 0.8) p2.mesh.position.x -= p2.speed;
-      if (touchState.p2Right && p2.mesh.position.x < 7) p2.mesh.position.x += p2.speed;
-    }
-
-    function loop() {
-      requestAnimationFrame(loop);
-      update();
-      renderer.render(scene, camera);
-    }
-    loop();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
