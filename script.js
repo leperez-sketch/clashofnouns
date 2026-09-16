@@ -1,95 +1,204 @@
-// Banco de datos pedagógico por niveles
-const database = {
-    A1: [
-        { noun: "car", correct: "blue", wrongs: ["blues", "slowly"], explanation: "Adjectives in English don't have plural form ('blues') and go before the noun." },
-        { noun: "house", correct: "big", wrongs: ["beautifully", "run"], explanation: "We need a qualitative adjective like 'big' before the noun." }
+// ==========================================
+// BANCO DE PREGUNTAS EMBEBIDO (Evita error 404)
+// ==========================================
+const QUESTIONS_DATABASE = {
+    "A1": [
+        { category: "PRONOUNS", question: "She ___ a teacher.", options: ["is", "are", "am", "be"], correct: "is" },
+        { category: "VERBS", question: "They ___ to school every day.", options: ["go", "goes", "going", "gone"], correct: "go" },
+        { category: "ARTICLES", question: "I want to eat ___ apple.", options: ["an", "a", "the", "some"], correct: "an" },
+        { category: "PRESENT SIMPLE", question: "Do you ___ English?", options: ["speak", "speaks", "speaking", "spoke"], correct: "speak" },
+        { category: "PLURALS", question: "I have two ___.", options: ["cats", "cat", "cates", "caties"], correct: "cats" }
     ],
-    B1: [
-        { noun: "watch", correct: "expensive Swiss", wrongs: ["Swiss expensive", "expensive and Swiss"], explanation: "According to OSASCOMP, Opinion (expensive) goes before Origin (Swiss)." },
-        { noun: "table", correct: "round wooden", wrongs: ["wooden round", "round and wood"], explanation: "Shape (round) goes before Material (wooden)." }
+    "A2": [
+        { category: "PAST SIMPLE", question: "Yesterday, I ___ a movie.", options: ["watched", "watch", "watching", "watches"], correct: "watched" },
+        { category: "COMPARATIVES", question: "An elephant is ___ than a dog.", options: ["bigger", "more big", "biggest", "big"], correct: "bigger" },
+        { category: "FUTURE", question: "We are going to ___ Paris.", options: ["visit", "visited", "visiting", "visits"], correct: "visit" },
+        { category: "PREPOSITIONS", question: "The book is ___ the table.", options: ["on", "at", "in", "to"], correct: "on" }
     ],
-    C1: [
-        { noun: "disappointment", correct: "bitter", wrongs: ["heavy", "strong"], explanation: "In English collocations, we say 'bitter disappointment' to express a strong negative feeling." },
-        { noun: "rain", correct: "heavy", wrongs: ["strong", "big"], explanation: "The correct high-level collocation for intense rain is 'heavy rain'." }
+    "B1": [
+        { category: "PRESENT PERFECT", question: "I have ___ in Spain for 3 years.", options: ["lived", "live", "living", "lives"], correct: "lived" },
+        { category: "CONDITIONALS", question: "If it rains, I ___ stay home.", options: ["will", "would", "had", "did"], correct: "will" },
+        { category: "MODALS", question: "You ___ study hard to pass.", options: ["must", "would", "could", "might"], correct: "must" }
     ]
 };
 
+// ==========================================
+// ESTADO DEL JUEGO
+// ==========================================
 let currentLevel = "A1";
-let currentQuestionIndex = 0;
-let playerHP = 100;
-let enemyHP = 100;
+let currentQuestion = null;
+let p1Hp = 100;
+let p2Hp = 100;
+let combo = 0;
 
-function loadQuestion() {
-    const questions = database[currentLevel];
-    if (currentQuestionIndex >= questions.length) {
-        currentQuestionIndex = 0; // Reiniciar preguntas si se acaban
+// ==========================================
+// FUNCIONES GLOBALES
+// ==========================================
+
+// Excursión global para que el HTML detecte el evento onchange
+window.changeLevel = function() {
+    const levelSelect = document.getElementById("level-select") || document.getElementById("cefr-select") || document.querySelector("select");
+    if (levelSelect) {
+        currentLevel = levelSelect.value;
+        combo = 0;
+        loadNextQuestion();
     }
+};
+
+window.restartGame = function() {
+    p1Hp = 100;
+    p2Hp = 100;
+    combo = 0;
+    updateHPUI();
     
-    const item = questions[currentQuestionIndex];
-    document.getElementById("target-noun").innerText = item.noun;
-    document.getElementById("feedback").innerText = "";
+    const modal = document.getElementById("game-over-modal") || document.querySelector(".modal");
+    if (modal) modal.classList.add("hidden");
     
+    loadNextQuestion();
+};
+
+// ==========================================
+// LÓGICA DEL JUEGO Y PREGUNTAS
+// ==========================================
+
+function getDOMElement(selectors) {
+    for (let selector of selectors) {
+        const el = document.querySelector(selector);
+        if (el) return el;
+    }
+    return null;
+}
+
+function loadNextQuestion() {
+    const questionsList = QUESTIONS_DATABASE[currentLevel] || QUESTIONS_DATABASE["A1"];
+    const randomIndex = Math.floor(Math.random() * questionsList.length);
+    currentQuestion = questionsList[randomIndex];
+
+    // Actualizar Categoría Gramatical
+    const categoryEl = getDOMElement([".grammar-category", "#grammar-category", ".category-box", "[data-category]"]);
+    if (categoryEl) {
+        categoryEl.textContent = currentQuestion.category;
+    }
+
+    // Actualizar Texto de la Pregunta (Quita el "Loading question...")
+    const questionEl = getDOMElement([".question-box", "#question-text", "#question", ".question"]);
+    if (questionEl) {
+        // Si el contenedor tiene estructura interna, busca o reemplaza directamente
+        const textSpan = questionEl.querySelector("span, p, h2") || questionEl;
+        textSpan.textContent = currentQuestion.question;
+    }
+
+    // Actualizar Combo
+    const comboEl = getDOMElement([".combo-text", "#combo", ".combo"]);
+    if (comboEl) {
+        comboEl.textContent = `COMBO: ${combo}x`;
+    }
+
+    renderOptions();
+}
+
+function renderOptions() {
+    const optionsContainer = getDOMElement([".options-grid", "#options-container", ".options-box", "#options"]);
+    
+    if (!optionsContainer) return;
+    optionsContainer.innerHTML = "";
+
     // Mezclar opciones
-    let options = [item.correct, ...item.wrongs];
-    options.sort(() => Math.random() - 0.5);
-    
-    const container = document.getElementById("options-container");
-    container.innerHTML = "";
-    
-    options.forEach(opt => {
-        let btn = document.createElement("button");
-        btn.innerText = opt;
-        btn.onclick = () => checkAnswer(opt, item.correct, item.explanation);
-        container.appendChild(btn);
+    const shuffledOptions = [...currentQuestion.options].sort(() => Math.random() - 0.5);
+
+    shuffledOptions.forEach(optionText => {
+        const btn = document.createElement("button");
+        btn.className = "btn-option";
+        btn.textContent = optionText;
+
+        // Soporte táctil inmediato
+        const processClick = (e) => {
+            e.preventDefault();
+            checkAnswer(optionText, 1); // Asignado a P1 por defecto en interacciones generales
+        };
+
+        btn.addEventListener("touchstart", processClick, { passive: false });
+        btn.addEventListener("click", processClick);
+
+        optionsContainer.appendChild(btn);
     });
 }
 
-function checkAnswer(selected, correct, explanation) {
-    const arrow = document.getElementById("arrow");
-    const feedback = document.getElementById("feedback");
+function checkAnswer(selectedOption, playerNum) {
+    if (p1Hp <= 0 || p2Hp <= 0) return;
 
-    if (selected === correct) {
-        // Ataque del Jugador
-        enemyHP -= 25;
-        document.getElementById("enemy-hp").innerText = enemyHP;
-        feedback.innerHTML = `<span style="color: #4cd137;">🎯 Correct! ${explanation}</span>`;
+    if (selectedOption === currentQuestion.correct) {
+        // RESPUESTA CORRECTA: Daño al oponente + Aumento de Combo
+        combo++;
+        if (playerNum === 1) {
+            p2Hp = Math.max(0, p2Hp - 25);
+        } else {
+            p1Hp = Math.max(0, p1Hp - 25);
+        }
+        updateHPUI();
+
+        if (p1Hp <= 0 || p2Hp <= 0) {
+            endGame(playerNum);
+        } else {
+            loadNextQuestion();
+        }
+    } else {
+        // RESPUESTA INCORRECTA: Pierde vida + Reinicia Combo (Sin pausas)
+        combo = 0;
+        if (playerNum === 1) {
+            p1Hp = Math.max(0, p1Hp - 20);
+        } else {
+            p2Hp = Math.max(0, p2Hp - 20);
+        }
         
-        // Animación de flecha
-        arrow.className = "shooting";
-        setTimeout(() => { arrow.className = "hidden"; }, 800);
-    } else {
-        // Contraataque Enemigo
-        playerHP -= 20;
-        document.getElementById("player-hp").innerText = playerHP;
-        feedback.innerHTML = `<span style="color: #e84118;">❌ Ouch! Wrong choice. Correct answer: "${correct} ${document.getElementById("target-noun").innerText}".</span>`;
-    }
+        flashRedBackground();
+        updateHPUI();
 
-    // Verificar fin de partida
-    if (enemyHP <= 0) {
-        alert("Victory! You destroyed the enemy clan!");
-        resetGame();
-    } else if (playerHP <= 0) {
-        alert("Defeat! The enemy destroyed your castle.");
-        resetGame();
-    } else {
-        currentQuestionIndex++;
-        setTimeout(loadQuestion, 2500); // Carga la siguiente después de 2.5s para leer el feedback
+        if (p1Hp <= 0 || p2Hp <= 0) {
+            endGame(playerNum === 1 ? 2 : 1);
+        } else {
+            loadNextQuestion();
+        }
     }
 }
 
-function changeLevel() {
-    currentLevel = document.getElementById("level-select").value;
-    resetGame();
+function updateHPUI() {
+    const p1Bar = getDOMElement(["#p1-hp", ".p1-hp-bar", ".hero-hp"]);
+    const p2Bar = getDOMElement(["#p2-hp", ".p2-hp-bar", ".boss-hp"]);
+
+    if (p1Bar) p1Bar.style.width = `${p1Hp}%`;
+    if (p2Bar) p2Bar.style.width = `${p2Hp}%`;
 }
 
-function resetGame() {
-    playerHP = 100;
-    enemyHP = 100;
-    currentQuestionIndex = 0;
-    document.getElementById("player-hp").innerText = playerHP;
-    document.getElementById("enemy-hp").innerText = enemyHP;
-    loadQuestion();
+function flashRedBackground() {
+    document.body.style.backgroundColor = "#5c1d1d";
+    setTimeout(() => {
+        document.body.style.backgroundColor = "";
+    }, 150);
 }
 
-// Iniciar juego por primera vez
-loadQuestion();
+function endGame(winnerNum) {
+    const modal = getDOMElement(["#game-over-modal", ".modal"]);
+    const winnerText = getDOMElement(["#winner-text", ".winner-title"]);
+
+    if (winnerText) {
+        winnerText.textContent = `¡JUGADOR ${winnerNum} GANA! 🏆`;
+    }
+    if (modal) {
+        modal.classList.remove("hidden");
+    }
+}
+
+// ==========================================
+// INICIALIZACIÓN
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    // Sincronizar el nivel actual con el select inicial
+    const levelSelect = getDOMElement(["#level-select", "#cefr-select", "select"]);
+    if (levelSelect) {
+        currentLevel = levelSelect.value || "A1";
+        levelSelect.addEventListener("change", window.changeLevel);
+    }
+
+    loadNextQuestion();
+});
