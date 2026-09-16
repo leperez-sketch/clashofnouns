@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash of Nouns - Team VS</title>
+  <title>Clash of Nouns - Grammar Battle</title>
   <style>
     * {
       box-sizing: border-box;
@@ -27,8 +27,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 30px;
-      background: rgba(20, 22, 30, 0.9);
+      padding: 10px 25px;
+      background: rgba(20, 22, 30, 0.95);
       border-bottom: 2px solid #1f2833;
       z-index: 10;
     }
@@ -37,7 +37,7 @@
       display: flex;
       align-items: center;
       gap: 15px;
-      width: 35%;
+      width: 32%;
     }
 
     .team-hud.blue {
@@ -45,7 +45,7 @@
     }
 
     .team-name {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 900;
       letter-spacing: 1px;
     }
@@ -72,17 +72,39 @@
     .red-hp { background: linear-gradient(90deg, #ff3366, #ff6b81); }
     .blue-hp { background: linear-gradient(90deg, #0072ff, #00d2ff); }
 
-    /* Center Timer */
+    /* Center Controls & Timer */
+    .center-hud {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .level-select {
+      background: #181a26;
+      color: #00d2ff;
+      border: 2px solid #2e344d;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .level-select:hover {
+      border-color: #00d2ff;
+    }
+
     .timer-box {
-      border: 3px solid #ff3366;
+      border: 2px solid #ff3366;
       border-radius: 8px;
-      padding: 6px 20px;
+      padding: 4px 16px;
       background: #12131c;
-      box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+      box-shadow: 0 0 12px rgba(255, 51, 102, 0.3);
     }
 
     .timer-text {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 800;
       color: #ff3366;
       font-family: monospace;
@@ -99,7 +121,7 @@
     /* Bottom Control / Questions Section */
     .quiz-container {
       display: flex;
-      height: 240px;
+      height: 250px;
       border-top: 2px solid #222533;
       background: #0f1017;
       position: relative;
@@ -107,7 +129,7 @@
 
     .quiz-side {
       flex: 1;
-      padding: 15px 25px;
+      padding: 12px 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -117,39 +139,55 @@
       border-right: 2px solid rgba(255, 255, 255, 0.1);
     }
 
-    .question-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #aaa;
+    .quiz-header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 6px;
+    }
+
+    .question-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .category-badge {
+      background: #2a2d3d;
+      color: #aaa;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
     }
 
     .question-card {
       background: #181a26;
       border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 1.15rem;
+      padding: 10px 14px;
+      font-size: 1.1rem;
       font-weight: 600;
-      min-height: 50px;
+      min-height: 48px;
       display: flex;
       align-items: center;
       border: 1px solid #2a2d3d;
     }
 
+    /* 2x2 Options Grid */
     .options-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 10px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .option-btn {
       background: #1e2235;
       border: 2px solid #2e344d;
       color: #fff;
-      padding: 12px 8px;
+      padding: 10px 8px;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
@@ -181,10 +219,10 @@
       padding: 40px;
       border-radius: 16px;
       text-align: center;
-      max-width: 400px;
+      max-width: 420px;
     }
 
-    .modal-title { font-size: 2.5rem; margin-bottom: 15px; }
+    .modal-title { font-size: 2.5rem; margin-bottom: 15px; font-weight: 900; }
     .restart-btn {
       margin-top: 20px;
       padding: 12px 30px;
@@ -195,6 +233,10 @@
       font-size: 1.1rem;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+    .restart-btn:hover {
+      background: #e02452;
     }
   </style>
 </head>
@@ -207,8 +249,15 @@
       <div class="hp-bar-outer"><div id="red-hp" class="hp-bar-inner red-hp"></div></div>
     </div>
     
-    <div class="timer-box">
-      <div id="timer" class="timer-text">2:00</div>
+    <div class="center-hud">
+      <select id="level-select" class="level-select" onchange="changeLevel(this.value)">
+        <option value="A1">Level A1</option>
+        <option value="A2">Level A2</option>
+        <option value="B1">Level B1</option>
+      </select>
+      <div class="timer-box">
+        <div id="timer" class="timer-text">2:00</div>
+      </div>
     </div>
     
     <div class="team-hud blue">
@@ -224,14 +273,20 @@
   <div class="quiz-container">
     <!-- Red Team Question -->
     <div class="quiz-side red-side">
-      <div class="question-title red-text">Red Team Question:</div>
+      <div class="quiz-header-info">
+        <span class="question-title red-text">Red Team Question:</span>
+        <span id="red-cat" class="category-badge">Grammar</span>
+      </div>
       <div class="question-card" id="red-q-text">Loading...</div>
       <div class="options-grid" id="red-options"></div>
     </div>
 
     <!-- Blue Team Question -->
     <div class="quiz-side blue-side">
-      <div class="question-title blue-text">Blue Team Question:</div>
+      <div class="quiz-header-info">
+        <span class="question-title blue-text">Blue Team Question:</span>
+        <span id="blue-cat" class="category-badge">Grammar</span>
+      </div>
       <div class="question-card" id="blue-q-text">Loading...</div>
       <div class="options-grid" id="blue-options"></div>
     </div>
@@ -246,26 +301,121 @@
   </div>
 
   <script>
-    // --- Noun Questions Data ---
-    const nounQuestions = [
-      { q: "Which word is a Proper Noun?", options: ["city", "London", "building"], answer: "London" },
-      { q: "Identify the Abstract Noun:", options: ["Happiness", "Apple", "Teacher"], answer: "Happiness" },
-      { q: "Select the Collective Noun:", options: ["Flock", "Bird", "Feather"], answer: "Flock" },
-      { q: "Which noun is plural?", options: ["Child", "Children", "Childs"], answer: "Children" },
-      { q: "Find the Countable Noun:", options: ["Water", "Coin", "Music"], answer: "Coin" },
-      { q: "Which of these is a Uncountable Noun?", options: ["Rice", "Plate", "Spoon"], answer: "Rice" },
-      { q: "Identify the Compound Noun:", options: ["Sunlight", "Sunny", "Sun"], answer: "Sunlight" }
-    ];
+    // ==========================================
+    // BANCO COMPLETO DE PREGUNTAS (30 POR NIVEL)
+    // ==========================================
+    const QUESTIONS_DB = {
+        "A1": [
+            { category: "VERBS", question: "She ___ a student.", options: ["is", "are", "am", "be"], correct: "is" },
+            { category: "VERBS", question: "They ___ in London.", options: ["live", "lives", "living", "lived"], correct: "live" },
+            { category: "ARTICLES", question: "I have ___ apple.", options: ["an", "a", "the", "some"], correct: "an" },
+            { category: "PRESENT SIMPLE", question: "He ___ like coffee.", options: ["doesn't", "don't", "isn't", "aren't"], correct: "doesn't" },
+            { category: "PRONOUNS", question: "Where ___ you from?", options: ["are", "is", "am", "do"], correct: "are" },
+            { category: "PREPOSITIONS", question: "I get up ___ 7 o'clock.", options: ["at", "in", "on", "for"], correct: "at" },
+            { category: "COMPARATIVES", question: "My brother is ___ than me.", options: ["taller", "more tall", "tallest", "tall"], correct: "taller" },
+            { category: "PLURALS", question: "There are two ___ on the table.", options: ["books", "book", "bookes", "bookies"], correct: "books" },
+            { category: "POSSESSIVES", question: "What is ___ name?", options: ["your", "you", "yours", "yourself"], correct: "your" },
+            { category: "PRESENT SIMPLE", question: "We ___ go to work on Sundays.", options: ["don't", "doesn't", "aren't", "isn't"], correct: "don't" },
+            { category: "MODALS", question: "She can ___ the guitar.", options: ["play", "plays", "playing", "played"], correct: "play" },
+            { category: "DEMONSTRATIVES", question: "Look at ___ birds over there.", options: ["those", "this", "that", "these"], correct: "those" },
+            { category: "PREPOSITIONS", question: "I am interested ___ music.", options: ["in", "at", "on", "with"], correct: "in" },
+            { category: "POSSESSIVES", question: "This is ___ house.", options: ["my", "me", "mine", "myself"], correct: "my" },
+            { category: "QUANTIFIERS", question: "How ___ apples do you need?", options: ["many", "much", "long", "far"], correct: "many" },
+            { category: "QUANTIFIERS", question: "How ___ milk is left?", options: ["much", "many", "long", "tall"], correct: "much" },
+            { category: "PREPOSITIONS", question: "The cat is sleeping ___ the sofa.", options: ["on", "at", "into", "to"], correct: "on" },
+            { category: "PAST SIMPLE", question: "Yesterday, it ___ rainy.", options: ["was", "were", "is", "be"], correct: "was" },
+            { category: "PRONOUNS", question: "Can you help ___, please?", options: ["me", "I", "my", "mine"], correct: "me" },
+            { category: "PRESENT CONTINUOUS", question: "They are ___ football right now.", options: ["playing", "play", "plays", "played"], correct: "playing" },
+            { category: "COLLECTIVE NOUNS", question: "A ___ of crows landed on the roof.", options: ["murder", "gaggle", "pod", "pack"], correct: "murder" },
+            { category: "PREPOSITIONS", question: "My birthday is ___ July.", options: ["in", "on", "at", "by"], correct: "in" },
+            { category: "ADJECTIVES", question: "She has got ___ hair.", options: ["long", "length", "longer", "longest"], correct: "long" },
+            { category: "QUANTIFIERS", question: "Is there ___ water in the bottle?", options: ["any", "some", "many", "a"], correct: "any" },
+            { category: "POSSESSIVES", question: "We have ___ lunch at 1 PM.", options: ["our", "us", "we", "ours"], correct: "our" },
+            { category: "PRESENT SIMPLE", question: "He ___ breakfast every morning.", options: ["eats", "eat", "eating", "ate"], correct: "eats" },
+            { category: "ADJECTIVES", question: "These shoes are very ___.", options: ["expensive", "expensiver", "expensivest", "more expensive"], correct: "expensive" },
+            { category: "QUANTIFIERS", question: "Do you want ___ tea?", options: ["some", "any", "an", "a"], correct: "some" },
+            { category: "POSSESSIVES", question: "Peter is ___ best friend.", options: ["my", "me", "mine", "I"], correct: "my" },
+            { category: "DEMONSTRATIVES", question: "Who is ___ boy over there?", options: ["that", "these", "those", "this"], correct: "that" }
+        ],
+        "A2": [
+            { category: "PAST SIMPLE", question: "Yesterday, I ___ a new car.", options: ["bought", "buy", "buying", "buys"], correct: "bought" },
+            { category: "COMPARATIVES", question: "Jupiter is ___ than Earth.", options: ["larger", "more large", "largest", "large"], correct: "larger" },
+            { category: "FUTURE", question: "If it rains, we ___ at home.", options: ["will stay", "stay", "stayed", "staying"], correct: "will stay" },
+            { category: "PAST CONTINUOUS", question: "While I was reading, he ___.", options: ["arrived", "arrives", "arrive", "arriving"], correct: "arrived" },
+            { category: "MODALS", question: "You ___ wear a helmet when riding a bike.", options: ["should", "would", "might", "could"], correct: "should" },
+            { category: "PRESENT PERFECT", question: "She hasn't finished her homework ___.", options: ["yet", "already", "just", "never"], correct: "yet" },
+            { category: "SUPERLATIVES", question: "This movie is ___ than the last one.", options: ["better", "more good", "gooder", "best"], correct: "better" },
+            { category: "PRESENT PERFECT", question: "They ___ to Spain three times.", options: ["have been", "go", "went", "going"], correct: "have been" },
+            { category: "PAST CONTINUOUS", question: "What ___ you doing at 8 PM last night?", options: ["were", "was", "are", "did"], correct: "were" },
+            { category: "FUTURE", question: "I am going ___ a new phone tomorrow.", options: ["to buy", "buying", "buy", "bought"], correct: "to buy" },
+            { category: "ADVERBS", question: "He speaks English ___ than his sister.", options: ["more fluently", "fluenter", "fluent", "most fluent"], correct: "more fluently" },
+            { category: "MODALS", question: "You ___ bring an umbrella, it looks like rain.", options: ["must", "couldn't", "mustn't", "wouldn't"], correct: "must" },
+            { category: "PAST PARTICIPLE", question: "Have you ever ___ a horse?", options: ["ridden", "rode", "ride", "riding"], correct: "ridden" },
+            { category: "CONNECTORS", question: "The food was cold, ___ we didn't eat it.", options: ["so", "because", "although", "but"], correct: "so" },
+            { category: "GERUNDS", question: "She is looking forward to ___ you.", options: ["meeting", "meet", "met", "meets"], correct: "meeting" },
+            { category: "PRESENT PERFECT", question: "How long ___ you lived here?", options: ["have", "do", "did", "are"], correct: "have" },
+            { category: "GERUNDS", question: "He gave up ___ last year.", options: ["smoking", "smoke", "smoked", "smokes"], correct: "smoking" },
+            { category: "PASSIVE VOICE", question: "This castle ___ built in 1500.", options: ["was", "is", "were", "had"], correct: "was" },
+            { category: "VERB PATTERNS", question: "I don't mind ___ early on Mondays.", options: ["waking up", "wake up", "woke up", "woken up"], correct: "waking up" },
+            { category: "REPORTED SPEECH", question: "She asked me ___ I lived.", options: ["where", "what", "who", "which"], correct: "where" },
+            { category: "QUESTION TAGS", question: "I am taller than him, ___ I?", options: ["aren't", "am not", "don't", "isn't"], correct: "aren't" },
+            { category: "INFINITIVES", question: "He promised ___ me tonight.", options: ["to call", "calling", "call", "called"], correct: "to call" },
+            { category: "QUANTIFIERS", question: "There aren't ___ people in the room.", options: ["many", "much", "little", "lot"], correct: "many" },
+            { category: "ADJECTIVES", question: "We stayed in a ___ hotel.", options: ["comfortable", "comfort", "comfortably", "comforting"], correct: "comfortable" },
+            { category: "PURPOSE", question: "I opened the door ___ see who it was.", options: ["to", "for", "so", "because"], correct: "to" },
+            { category: "PREPOSITIONS", question: "She left without ___ goodbye.", options: ["saying", "say", "said", "says"], correct: "saying" },
+            { category: "PREPOSITIONS", question: "They have lived here ___ 2010.", options: ["since", "for", "from", "during"], correct: "since" },
+            { category: "EXPRESSIONS", question: "I am not used to ___ early.", options: ["getting up", "get up", "got up", "gets up"], correct: "getting up" },
+            { category: "VOCABULARY", question: "You don't have to pay, it's ___.", options: ["free", "cheap", "expensive", "costly"], correct: "free" },
+            { category: "PHRASAL VERBS", question: "What time does the plane ___ off?", options: ["take", "go", "fly", "get"], correct: "take" }
+        ],
+        "B1": [
+            { category: "CONDITIONALS", question: "If I ___ more time, I would travel.", options: ["had", "have", "will have", "would have"], correct: "had" },
+            { category: "PASSIVE VOICE", question: "The museum ___ renovated right now.", options: ["is being", "is", "was", "had been"], correct: "is being" },
+            { category: "SUBJUNCTIVE", question: "He talked as if he ___ everything.", options: ["knew", "knows", "has known", "will know"], correct: "knew" },
+            { category: "PAST PERFECT", question: "By the time we arrived, the film ___.", options: ["had started", "started", "has started", "starts"], correct: "had started" },
+            { category: "WISHES", question: "I wish I ___ more languages.", options: ["spoke", "speak", "can speak", "will speak"], correct: "spoke" },
+            { category: "RELATIVE CLAUSES", question: "The man ___ lives next door is a doctor.", options: ["who", "which", "whose", "whom"], correct: "who" },
+            { category: "MODALS OF DEDUCTION", question: "You ___ have seen him yesterday, he was in Paris.", options: ["couldn't", "mustn't", "wouldn't", "shouldn't"], correct: "couldn't" },
+            { category: "GERUNDS", question: "She insisted on ___ for dinner.", options: ["paying", "to pay", "pay", "paid"], correct: "paying" },
+            { category: "CONNECTORS", question: "Despite ___ hard, he failed the exam.", options: ["studying", "he studied", "study", "to study"], correct: "studying" },
+            { category: "TIME CLAUSES", question: "I'll call you as soon as I ___.", options: ["arrive", "will arrive", "arrived", "am arriving"], correct: "arrive" },
+            { category: "RELATIVE CLAUSES", question: "He's the student ___ project won first prize.", options: ["whose", "who", "which", "that"], correct: "whose" },
+            { category: "CORRELATIVES", question: "Neither John ___ Mary came to the party.", options: ["nor", "or", "and", "but"], correct: "nor" },
+            { category: "WOULD RATHER", question: "I'd rather you ___ smoke in here.", options: ["didn't", "don't", "won't", "haven't"], correct: "didn't" },
+            { category: "PASSIVE VOICE", question: "The problem is being ___ by experts.", options: ["investigated", "investigate", "investigating", "investigates"], correct: "investigated" },
+            { category: "HAD BETTER", question: "You had better ___ a doctor immediately.", options: ["see", "seeing", "to see", "saw"], correct: "see" },
+            { category: "SO / SUCH", question: "It was ___ a cold day that we stayed inside.", options: ["such", "so", "very", "too"], correct: "such" },
+            { category: "REPORTED SPEECH", question: "She suggested ___ to the cinema.", options: ["going", "to go", "go", "went"], correct: "going" },
+            { category: "RELATIVE CLAUSES", question: "I am looking for a job ___ pays well.", options: ["that", "who", "where", "whose"], correct: "that" },
+            { category: "CONDITIONALS", question: "Unless you ___ now, you will be late.", options: ["leave", "don't leave", "will leave", "left"], correct: "leave" },
+            { category: "PREPOSITIONS", question: "He was accused of ___ money.", options: ["stealing", "to steal", "steal", "stole"], correct: "stealing" },
+            { category: "INFINITIVES", question: "They managed ___ the summit before nightfall.", options: ["to reach", "reaching", "reach", "reached"], correct: "to reach" },
+            { category: "VERB PATTERNS", question: "I can't afford ___ a new car this year.", options: ["to buy", "buying", "buy", "bought"], correct: "to buy" },
+            { category: "REPORTED SPEECH", question: "He asked me how long I ___ English.", options: ["had been learning", "have learned", "learn", "will learn"], correct: "had been learning" },
+            { category: "OBLIGATION", question: "We ought ___ help them with their bags.", options: ["to", "for", "should", "must"], correct: "to" },
+            { category: "GERUNDS", question: "She regretted ___ him her secret.", options: ["telling", "to tell", "tell", "told"], correct: "telling" },
+            { category: "CONNECTORS", question: "The flight was cancelled due ___ bad weather.", options: ["to", "for", "of", "by"], correct: "to" },
+            { category: "INVERSION", question: "Hardly ___ entered the room when the phone rang.", options: ["had I", "I had", "did I", "I did"], correct: "had I" },
+            { category: "PREPOSITIONS", question: "I am not accustomed to ___ treated like this.", options: ["being", "be", "been", "to be"], correct: "being" },
+            { category: "PHRASAL VERBS", question: "He runs so fast that nobody can keep ___ with him.", options: ["up", "on", "in", "off"], correct: "up" },
+            { category: "IN CASE", question: "You should take an umbrella in case it ___.", options: ["rains", "will rain", "rained", "raining"], correct: "rains" }
+        ]
+    };
 
-    // --- Game State ---
+    // --- Configuración de Juego y Daños ---
+    const DAMAGE_CORRECT = 10; // Daño al rival por acierto
+    const DAMAGE_WRONG = 12;   // Castigo/daño a uno mismo por fallo
+
     let redHealth = 100;
     let blueHealth = 100;
-    let timeRemaining = 120; // 2 minutes
+    let currentLevel = "A1";
+    let timeRemaining = 120; // 2 minutos
     let timerInterval = null;
     let currentRedQ = null;
     let currentBlueQ = null;
 
-    // Canvas Setup
+    // --- Canvas Engine Setup ---
     const canvas = document.getElementById("battlefield");
     const ctx = canvas.getContext("2d");
     let arrows = [];
@@ -280,7 +430,7 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- Arrow & Animation Engine ---
+    // --- Arrow Physics & Visuals ---
     class Arrow {
       constructor(startX, startY, targetX, targetY, color) {
         this.startX = startX;
@@ -303,7 +453,7 @@
         this.prevY = this.y;
         this.progress += this.speed;
 
-        // Quadratic Bezier Parabolic Curve
+        // Curved Bezier Path
         const t = this.progress;
         this.x = (1 - t) * this.startX + t * this.targetX;
         const linearY = (1 - t) * this.startY + t * this.targetY;
@@ -321,7 +471,7 @@
         ctx.translate(this.x, this.y);
         ctx.rotate(angle);
 
-        // Arrow Body
+        // Arrow Shaft
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -342,11 +492,11 @@
     }
 
     function createHitParticles(x, y, color) {
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 10; i++) {
         particles.push({
           x, y,
-          vx: (Math.random() - 0.5) * 6,
-          vy: (Math.random() - 0.5) * 6,
+          vx: (Math.random() - 0.5) * 7,
+          vy: (Math.random() - 0.5) * 7,
           life: 1.0,
           color
         });
@@ -357,11 +507,10 @@
       floatingTexts.push({ text, x, y, life: 1.0, color });
     }
 
-    // --- Canvas Render Loop ---
+    // --- Main Render Loop ---
     function animate() {
       ctx.save();
 
-      // Screen Shake
       if (screenShake > 0) {
         ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
         screenShake *= 0.85;
@@ -373,21 +522,21 @@
       const midX = canvas.width / 2;
       const groundY = canvas.height - 30;
 
-      // Draw Center Line (Divider)
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      // Center Divider Line
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
       ctx.setLineDash([8, 8]);
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(midX, 0);
       ctx.lineTo(midX, canvas.height);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Draw Stick Figures (Red Team Left, Blue Team Right)
+      // Draw Stickman Armies
       drawStickTeam(canvas.width * 0.15, groundY, 4, "#ff3366", true);
       drawStickTeam(canvas.width * 0.85, groundY, 4, "#00d2ff", false);
 
-      // Update & Render Arrows
+      // Render Arrows
       for (let i = arrows.length - 1; i >= 0; i--) {
         const arrow = arrows[i];
         const arrived = arrow.update();
@@ -395,7 +544,7 @@
 
         if (arrived) {
           createHitParticles(arrow.targetX, arrow.targetY, arrow.color);
-          addFloatingText("-10 HP", arrow.targetX, arrow.targetY - 10, arrow.color);
+          addFloatingText(`-${DAMAGE_CORRECT} HP`, arrow.targetX, arrow.targetY - 10, arrow.color);
           screenShake = 6;
           arrows.splice(i, 1);
         }
@@ -417,7 +566,7 @@
         if (p.life <= 0) particles.splice(i, 1);
       }
 
-      // Render Floating Combat Text
+      // Render Combat Text
       for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
         ft.y -= 1;
@@ -425,7 +574,7 @@
         ctx.fillStyle = ft.color;
         ctx.font = "bold 18px Segoe UI";
         ctx.globalAlpha = Math.max(0, ft.life);
-        ctx.fillText(ft.text, ft.x - 20, ft.y);
+        ctx.fillText(ft.text, ft.x - 25, ft.y);
         ctx.globalAlpha = 1.0;
 
         if (ft.life <= 0) floatingTexts.splice(i, 1);
@@ -442,7 +591,7 @@
         const y = groundY;
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = (i === 0) ? 3.5 : 2.5; // Leader is thicker
 
         // Head
         ctx.beginPath();
@@ -463,7 +612,7 @@
         ctx.lineTo(x + 8, y);
         ctx.stroke();
 
-        // Arms (Holding Bow)
+        // Arms
         const armDir = isFacingRight ? 1 : -1;
         ctx.beginPath();
         ctx.moveTo(x, y - 30);
@@ -472,11 +621,12 @@
       }
     }
 
-    // --- Attack Actions ---
+    // --- Gameplay Combat Actions ---
     function triggerAttack(attacker) {
       const isRed = attacker === 'red';
-      const count = 5; // Arrow Volley Count
+      const count = 5;
 
+      // Volley of arrows
       for (let i = 0; i < count; i++) {
         setTimeout(() => {
           const startX = isRed ? canvas.width * 0.15 : canvas.width * 0.85;
@@ -489,28 +639,51 @@
         }, i * 80);
       }
 
-      // Damage Logic
+      // Apply Direct Damage to Opponent
       if (isRed) {
-        blueHealth = Math.max(0, blueHealth - 10);
+        blueHealth = Math.max(0, blueHealth - DAMAGE_CORRECT);
         document.getElementById("blue-hp").style.width = blueHealth + "%";
       } else {
-        redHealth = Math.max(0, redHealth - 10);
+        redHealth = Math.max(0, redHealth - DAMAGE_CORRECT);
         document.getElementById("red-hp").style.width = redHealth + "%";
       }
 
       checkWinCondition();
     }
 
-    // --- Quiz Logic ---
+    function triggerSelfPenalty(team) {
+      const isRed = team === 'red';
+      const selfX = isRed ? canvas.width * 0.15 : canvas.width * 0.85;
+      const selfY = canvas.height - 50;
+
+      // Show punishment particles & penalty floaters
+      createHitParticles(selfX, selfY, "#ff0000");
+      addFloatingText(`-${DAMAGE_WRONG} HP (MISSED!)`, selfX, selfY - 20, "#ff4d4d");
+      screenShake = 8;
+
+      if (isRed) {
+        redHealth = Math.max(0, redHealth - DAMAGE_WRONG);
+        document.getElementById("red-hp").style.width = redHealth + "%";
+      } else {
+        blueHealth = Math.max(0, blueHealth - DAMAGE_WRONG);
+        document.getElementById("blue-hp").style.width = blueHealth + "%";
+      }
+
+      checkWinCondition();
+    }
+
+    // --- Quiz Engine ---
     function getRandomQuestion() {
-      return nounQuestions[Math.floor(Math.random() * nounQuestions.length)];
+      const db = QUESTIONS_DB[currentLevel] || QUESTIONS_DB["A1"];
+      return db[Math.floor(Math.random() * db.length)];
     }
 
     function loadQuestion(team) {
       const q = getRandomQuestion();
       if (team === 'red') {
         currentRedQ = q;
-        document.getElementById("red-q-text").innerText = q.q;
+        document.getElementById("red-cat").innerText = q.category;
+        document.getElementById("red-q-text").innerText = q.question;
         const container = document.getElementById("red-options");
         container.innerHTML = "";
         q.options.forEach(opt => {
@@ -522,7 +695,8 @@
         });
       } else {
         currentBlueQ = q;
-        document.getElementById("blue-q-text").innerText = q.q;
+        document.getElementById("blue-cat").innerText = q.category;
+        document.getElementById("blue-q-text").innerText = q.question;
         const container = document.getElementById("blue-options");
         container.innerHTML = "";
         q.options.forEach(opt => {
@@ -537,13 +711,22 @@
 
     function answerQuestion(team, selected) {
       const currentQ = team === 'red' ? currentRedQ : currentBlueQ;
-      if (selected === currentQ.answer) {
+      
+      if (selected === currentQ.correct) {
         triggerAttack(team);
+      } else {
+        triggerSelfPenalty(team);
       }
       loadQuestion(team);
     }
 
-    // --- Game Timer & Rules ---
+    function changeLevel(newLevel) {
+      currentLevel = newLevel;
+      loadQuestion('red');
+      loadQuestion('blue');
+    }
+
+    // --- Timer & Match Management ---
     function startTimer() {
       timerInterval = setInterval(() => {
         timeRemaining--;
