@@ -1,72 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>EFL Grammar Clash 1v1</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clash of Nouns - PvP Duelo</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Canvas de fondo 3D -->
-  <div id="canvas-container"></div>
+    <div id="game-container">
+        <!-- TOP HUD -->
+        <div id="top-hud">
+            <!-- RED CLAN (P1) -->
+            <div class="hud-clan red-clan">
+                <span class="clan-title">RED CLAN (P1)</span>
+                <div class="hp-bar-outer"><div id="p1-hp" class="hp-bar-inner"></div></div>
+            </div>
 
-  <!-- Capa HUD e Interfaz de Juego -->
-  <div id="ui-layer">
-    
-    <!-- BARRA SUPERIOR DE SALUD Y NIVEL -->
-    <header id="hud-top">
-      <div class="player-card p1">
-        <div class="avatar">🧙‍♂️</div>
-        <div class="info">
-          <span class="name">HERO (P1)</span>
-          <div class="hp-bar-outer"><div id="p1-hp" class="hp-bar-inner" style="width: 100%;"></div></div>
+            <!-- TIMER Y NIVEL -->
+            <div id="timer-box">
+                <div id="timer-text">2:00</div>
+                <select id="cefr-select" onchange="changeLevel()">
+                    <option value="A1">A1 - Beginner</option>
+                    <option value="A2">A2 - Elementary</option>
+                    <option value="B1">B1 - Intermediate</option>
+                </select>
+            </div>
+
+            <!-- BLUE CLAN (P2) -->
+            <div class="hud-clan blue-clan">
+                <button id="music-btn" onclick="toggleMusic()">music ON/OFF</button>
+                <span class="clan-title">BLUE CLAN (P2)</span>
+                <div class="hp-bar-outer"><div id="p2-hp" class="hp-bar-inner"></div></div>
+            </div>
         </div>
-      </div>
 
-      <div id="level-badge">
-        <label for="level-select">CEFR LEVEL</label>
-        <select id="level-select" onchange="changeLevel()">
-          <option value="A1">A1 - Beginner</option>
-          <option value="A2">A2 - Elementary</option>
-          <option value="B1" selected>B1 - Intermediate</option>
-          <option value="B2">B2 - Upper-Int</option>
-          <option value="C1">C1 - Advanced</option>
-        </select>
-        <div id="combo-tag">COMBO: <span id="combo-count">0</span>x</div>
-      </div>
-
-      <div class="player-card p2">
-        <div class="info align-right">
-          <span class="name">BOSS (P2)</span>
-          <div class="hp-bar-outer"><div id="p2-hp" class="hp-bar-inner" style="width: 100%;"></div></div>
+        <!-- CAMPO DE BATALLA (Dibujos Canvas) -->
+        <div id="canvas-container">
+            <canvas id="battleCanvas"></canvas>
         </div>
-        <div class="avatar">🧌</div>
-      </div>
-    </header>
 
-    <!-- TARJETA DE PREGUNTA BATTLE CARD -->
-    <main id="quiz-container">
-      <div class="topic-tag" id="topic-tag">GRAMMAR CATEGORY</div>
-      <h2 id="question-text">Loading question...</h2>
-      
-      <div id="options-grid" class="options-grid">
-        <!-- Generado dinámicamente -->
-      </div>
+        <!-- PANTALLA DIVIDIDA DE PREGUNTAS (PVP) -->
+        <div id="split-controls">
+            <!-- JUGADOR 1 (Izquierda) -->
+            <div class="player-panel p1-panel">
+                <div class="panel-header">RED CLAN</div>
+                <div id="p1-category" class="category-tag">CATEGORY</div>
+                <div id="p1-question" class="question-box">Cargando...</div>
+                <div id="p1-options" class="options-grid"></div>
+            </div>
 
-      <!-- FEEDBACK Y EXPLICACIÓN -->
-      <div id="feedback-panel" class="hidden">
-        <div id="feedback-status"></div>
-        <div id="explanation-text"></div>
-        <button id="next-btn" onclick="nextQuestion()">NEXT ROUND ➔</button>
-      </div>
-    </main>
-  </div>
+            <!-- LÍNEA DIVISORIA CENTRAL -->
+            <div class="center-divider"></div>
 
-  <!-- Cargas de Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="script.js"></script>
-  <script src="app.js"></script>
+            <!-- JUGADOR 2 (Derecha) -->
+            <div class="player-panel p2-panel">
+                <div class="panel-header">BLUE CLAN</div>
+                <div id="p2-category" class="category-tag">CATEGORY</div>
+                <div id="p2-question" class="question-box">Cargando...</div>
+                <div id="p2-options" class="options-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VICTORIA -->
+    <div id="game-over-modal" class="modal hidden">
+        <h1 id="winner-text">¡GANA JUGADOR!</h1>
+        <button class="btn-restart" onclick="restartGame()">¡OTRA VEZ!</button>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
